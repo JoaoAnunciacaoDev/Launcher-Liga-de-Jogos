@@ -167,21 +167,17 @@ O `.exe` é a opção portátil. O instalador NSIS cria atalhos e desinstalador.
 
 ## Gerar Releases Windows e Linux no GitHub
 
-O workflow [`.github/workflows/linux-release.yml`](.github/workflows/linux-release.yml) gera automaticamente:
+O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) gera automaticamente:
 
 - Windows: `.exe`, instalador NSIS e `.msi`.
 - Linux: `.AppImage` e `.deb`.
 
 Ele só executa quando uma tag começando com `v` é enviada; `git pull`, push comum para `main` e Pull Requests não iniciam uma Release.
 
-Antes da primeira execução, no GitHub abra **Settings → Actions → General** e habilite **Read and write permissions** em *Workflow permissions*.
-
-Em **Settings → Secrets and variables → Actions**, crie o secret `LAUNCHER_ADMIN_PASSWORD`. O workflow usa esse secret para incorporar a senha aos pacotes publicados.
-
 Para publicar uma versão:
 
 ```bash
-git add .github/workflows/linux-release.yml
+git add .github/workflows/release.yml
 git commit -m "ci: gerar releases Windows e Linux"
 git push origin main
 git tag v0.1.0

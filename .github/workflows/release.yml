@@ -69,6 +69,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [build-linux, build-windows]
     steps:
+      - uses: actions/checkout@v4
       - name: Baixar pacotes
         uses: actions/download-artifact@v4
         with:
@@ -78,5 +79,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$GITHUB_REF_NAME" || gh release create "$GITHUB_REF_NAME" --generate-notes --title "Liga de Jogos UEFS $GITHUB_REF_NAME"
-          find release-assets -type f -print0 | xargs -0 gh release upload "$GITHUB_REF_NAME" --clobber
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes --title "Liga de Jogos UEFS $GITHUB_REF_NAME"
+          find release-assets -type f -print0 | xargs -0 gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber
