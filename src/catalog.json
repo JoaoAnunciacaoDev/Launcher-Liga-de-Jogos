@@ -1,10 +1,104 @@
 [
   {
+    "id": "mikus",
+    "title": "Miku Fogo & Miku Água",
+    "summary": "Jogo baseado no clássico flash 'FireBoy and WaterGirl', com as protagonistas inspiradas na Hatsune Miku.",
+    "accent": "#f6a43a",
+    "cover_url": "https://drive.usercontent.google.com/download?id=1GFrt6rwFq03a0rVQJxREKazioJ8EAvSl&export=download&confirm=t",
+    "builds": {
+      "windows": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1NRWtLXfM-6qCQsNtEdLA0rmhU9yzDthe&export=download&confirm=t",
+        "executable": "Mikus.exe"
+      },
+      "linux": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1Go1YG4zopCJRh33jHTPO8v7NTouf3v0s&export=download&confirm=t",
+        "executable": "MikusLinux.x86_64"
+      }
+    }
+  },
+  {
+      "id": "forca",
+      "title": "Forca",
+      "summary": "Um jogo de Forca. Por Giulia Loula",
+      "accent": "#f6a43a",
+      "cover_url": "https://drive.usercontent.google.com/download?id=1ZqpFd5Xb4lF03H--tOggd2LmrEOsUTWM&export=download&confirm=t",
+      "builds": {
+        "windows": {
+          "downloadUrl": "https://drive.usercontent.google.com/download?id=1A9cWOTA4eJSgT7Tttz0yzOHlRVVJ-sSc&export=download&confirm=t",
+          "executable": "forca.exe"
+        },
+        "linux": {
+          "downloadUrl": "https://drive.usercontent.google.com/download?id=1S9E12GDOc3DNqXu2JHCqtM50uBWZP7Bi&export=download&confirm=t",
+          "executable": "forca.x86_64"
+        }
+      }
+    },
+  {
     "id": "muranga",
     "title": "Muranga",
-    "summary": "Jogo de teste da Liga de Jogos UEFS.",
+    "summary": "Um jogo de plataforma de precisão desafiador semelhante a Celeste.\nColete as Murangas e divirta-se!!\nFeito por João Victor Anunciação da Silva.",
     "accent": "#f6a43a",
-    "sourcePath": "C:\\Users\\js528\\Documents\\LigaDeJogos\\Muranga.zip",
-    "executable": "Muranga.exe"
+    "cover_url": "https://drive.usercontent.google.com/download?id=1k19uZZblrPCQuNF1NEZChx8_bZq_jrIk&export=download&confirm=t",
+    "builds": {
+      "windows": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1E_suGszUNln_kPljHskpTt2A03ve9BRv&export=download&confirm=t",
+        "executable": "Muranga.exe"
+      },
+      "linux": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1e5vMAycDiAit2yJl9xopL5azfotSq0pq&export=download&confirm=t",
+        "executable": "MurangaLinux.x86_64"
+      }
+    }
+  },
+{
+    "id": "embraceOfDarkness",
+    "title": "Embrace Of Darkness",
+    "summary": "Você acorda em um misterioso quarto escuro, cabe a você descobrir seus segredos e fugir.\nFeito por João Victor Anunciação da Silva.",
+    "accent": "#f6a43a",
+    "cover_url": "https://drive.usercontent.google.com/download?id=15c489h9SnztJ4xptqBgTMa8MLkKoHKAx&export=download&confirm=t",
+    "builds": {
+      "windows": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=11Jvf1Xhy0FP7_Fnq5Mo6L_eISdVaG5w8&export=download&confirm=t",
+        "executable": "EmbraceOfDarkness/EmbraceOfDarkness.exe"
+      },
+      "linux": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1TWAcWBOpHQL6F4t47AVcF9swRMwdiLbZ&export=download&confirm=t",
+        "executable": "EmbraceOfDarkness_linux/EmbraceOfDarkness.x86_64"
+      }
+    }
+  },
+  {
+    "id": "typo",
+    "title": "Typo",
+    "summary": "Um jogo de ritmo para praticar o conhecer o teclado.",
+    "accent": "#f6a43a",
+    "cover_url": "https://drive.usercontent.google.com/download?id=1iwznNgULNzl-xd5OG6dz1ZwO74-8KLdb&export=download&confirm=t",
+    "builds": {
+      "windows": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1ixl9q6_32yEtJyWHZXPcRvvWL2kdk-d2&export=download&confirm=t",
+        "executable": "Typo.exe"
+      },
+      "linux": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1CJILWmLuj8aJ0heTsmoMWVVk5oEgN6ET&export=download&confirm=t",
+        "executable": "Typo.x86_64"
+      }
+    }
+  },
+  {
+    "id": "plantaCarnivora",
+    "title": "Planta Carnívora",
+    "summary": "Jogo de labirinto em que você tem que alimentar as plantas carnívoras dentro do tempo. Feito por Giulia Loula",
+    "accent": "#f6a43a",
+    "cover_url": "https://drive.usercontent.google.com/download?id=1zohonlKcuUezb4cocHl4RemwUJvR199a&export=download&confirm=t",
+    "builds": {
+      "windows": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1tF-oFxtqvqX-XV5dF3-z7xvCDvSnSR-2&export=download&confirm=t",
+        "executable": "plantaCarnivora.exe"
+      },
+      "linux": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1Xcv59pKbHcOJzZykYAXNJ-61Gu3IoRLB&export=download&confirm=t",
+        "executable": "plantaCarnivora.x86_64"
+      }
+    }
   }
 ]
