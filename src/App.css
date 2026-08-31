@@ -31,14 +31,21 @@ h1 { margin-bottom: 0; font-size: clamp(1.6rem, 3vw, 2.5rem); }
 .secondary-action { border: 1px solid #706a82; color: #f8f7ff; background: #272535; }
 .primary-action:focus-visible, .secondary-action:focus-visible { outline: 3px solid white; outline-offset: 3px; }
 footer { color: #9d99ae; font-size: .82rem; }
-.exit-action, .cancel-action, .confirm-action { border: 1px solid #5b576d; border-radius: .65rem; padding: .55rem .85rem; color: #f8f7ff; background: #272535; cursor: pointer; }
-.exit-action:focus-visible, .cancel-action:focus-visible, .confirm-action:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.exit-action, .admin-action, .cancel-action, .confirm-action { border: 1px solid #5b576d; border-radius: .65rem; padding: .55rem .85rem; color: #f8f7ff; background: #272535; cursor: pointer; }
+.exit-action:focus-visible, .admin-action:focus-visible, .cancel-action:focus-visible, .confirm-action:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.admin-action.is-active { border-color: #f6a43a; color: #281807; background: #f6a43a; }
 .dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 1.5rem; background: rgb(9 9 15 / .78); }
 .exit-dialog { width: min(100%, 430px); padding: 2rem; border: 1px solid #5a526c; border-radius: 1.1rem; background: #211f2d; box-shadow: 0 1rem 4rem rgb(0 0 0 / .45); }
 .exit-dialog h2 { margin-bottom: .5rem; }
 .exit-dialog > p:not(.eyebrow) { color: #c6c2d1; }
 .exit-dialog label { display: block; margin: 1.3rem 0 .45rem; font-size: .9rem; font-weight: 700; }
-.exit-dialog input { width: 100%; border: 1px solid #706a82; border-radius: .6rem; padding: .8rem; color: #fff; background: #161520; font: inherit; }
+.password-field { position: relative; }
+.exit-dialog input { width: 100%; border: 1px solid #706a82; border-radius: .6rem; padding: .8rem 3rem .8rem .8rem; color: #fff; background: #161520; font: inherit; }
+.exit-dialog input::-ms-reveal { display: none; }
+.password-toggle { position: absolute; top: 50%; right: .35rem; display: grid; width: 2.35rem; height: 2.35rem; place-items: center; border: 0; border-radius: .45rem; transform: translateY(-50%); color: #f8f7ff; cursor: pointer; background: transparent; }
+.password-toggle:hover { background: #353247; }
+.password-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.password-toggle svg { width: 1.3rem; height: 1.3rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .dialog-error { margin: .75rem 0 0; color: #ffadad; font-size: .9rem; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: .7rem; margin-top: 1.5rem; }
 .confirm-action { border-color: #f6a43a; color: #281807; background: #f6a43a; font-weight: 800; }

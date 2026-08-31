@@ -22,9 +22,11 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [downloadingGameId, setDownloadingGameId] = useState<string | null>(null);
   const [gameRunning, setGameRunning] = useState(false);
-  const [exitDialogOpen, setExitDialogOpen] = useState(false);
-  const [exitPassword, setExitPassword] = useState("");
-  const [exitError, setExitError] = useState("");
+  const [adminDialogMode, setAdminDialogMode] = useState<"exit" | "uninstall" | null>(null);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminError, setAdminError] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [uninstallModeEnabled, setUninstallModeEnabled] = useState(false);
   const interactionLocked = useRef(false);
   const passwordInput = useRef<HTMLInputElement>(null);
   const catalogRef = useRef<HTMLElement>(null);
@@ -32,6 +34,7 @@ function App() {
   const game = games[selected] ?? fallbackGames[0];
   const build = game.builds[platform];
   const installation = installations[game.id];
+  const adminDialogOpen = adminDialogMode !== null;
 
   useEffect(() => { void invoke<Platform>("current_platform").then(setPlatform); }, []);
 
@@ -75,7 +78,7 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (exitDialogOpen) return;
+      if (adminDialogOpen) return;
       if (event.target instanceof Element && event.target.closest("button, input")) return;
       if (["ArrowRight", "d", "D"].includes(event.key)) { event.preventDefault(); setSelected((current) => (current + 1) % games.length); }
       if (["ArrowLeft", "a", "A"].includes(event.key)) { event.preventDefault(); setSelected((current) => (current - 1 + games.length) % games.length); }
@@ -88,7 +91,7 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [busy, exitDialogOpen, gameRunning, installation, game, games]);
+  }, [busy, adminDialogOpen, gameRunning, installation, game, games]);
 
   useEffect(() => {
     let animationFrame = 0;
@@ -100,7 +103,7 @@ function App() {
       if (action === "down") setSelected((current) => (current + 3) % games.length);
       if (action === "up") setSelected((current) => (current - 3 + games.length) % games.length);
       if (action === "confirm") void activateSelectedGame();
-      if (action === "back" && exitDialogOpen) setExitDialogOpen(false);
+      if (action === "back" && adminDialogOpen) closeAdminDialog();
     };
 
     const pollGamepad = () => {
@@ -108,7 +111,7 @@ function App() {
       const activeActions = new Set<string>();
       if (gamepad) {
         const pressed = (button: number) => gamepad.buttons[button]?.pressed;
-        if (!exitDialogOpen) {
+        if (!adminDialogOpen) {
           if (pressed(14) || gamepad.axes[0] < -0.6) activeActions.add("left");
           if (pressed(15) || gamepad.axes[0] > 0.6) activeActions.add("right");
           if (pressed(12) || gamepad.axes[1] < -0.6) activeActions.add("up");
@@ -124,7 +127,7 @@ function App() {
 
     animationFrame = window.requestAnimationFrame(pollGamepad);
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [busy, exitDialogOpen, gameRunning, installation, game, games]);
+  }, [busy, adminDialogOpen, gameRunning, installation, game, games]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -136,7 +139,7 @@ function App() {
     return () => unlisten?.();
   }, []);
 
-  useEffect(() => { if (exitDialogOpen) passwordInput.current?.focus(); }, [exitDialogOpen]);
+  useEffect(() => { if (adminDialogOpen) passwordInput.current?.focus(); }, [adminDialogOpen]);
 
   useEffect(() => {
     const catalogElement = catalogRef.current;
@@ -155,7 +158,16 @@ function App() {
       if (!build) throw new Error(`Não há build para ${platform}.`);
       const result = await invoke<Installation>("install_game", { gameId: game.id, downloadUrl: build.downloadUrl, executable: build.executable });
       setInstallations((current) => ({ ...current, [game.id]: result }));
-      setMessage(`${game.title} está pronto para jogar.`);
+      let coverUnavailable = false;
+      if (game.coverUrl) {
+        try {
+          const coverSource = await invoke<string>("get_cached_cover", { gameId: game.id, coverUrl: game.coverUrl });
+          setCoverSources((current) => ({ ...current, [game.id]: coverSource }));
+        } catch {
+          coverUnavailable = true;
+        }
+      }
+      setMessage(coverUnavailable ? `${game.title} está pronto para jogar, mas não foi possível baixar a capa.` : `${game.title} está pronto para jogar.`);
     } catch (error) { setMessage(`Falha ao instalar: ${String(error)}`); }
     finally { setBusy(false); setDownloadingGameId(null); }
   }
@@ -192,27 +204,56 @@ function App() {
   }
 
   function openExitDialog() {
-    setExitPassword("");
-    setExitError("");
-    setExitDialogOpen(true);
+    setAdminPassword("");
+    setAdminError("");
+    setShowAdminPassword(false);
+    setAdminDialogMode("exit");
   }
 
-  async function requestExit(event: React.FormEvent) {
+  function closeAdminDialog() {
+    setAdminDialogMode(null);
+    setAdminPassword("");
+    setAdminError("");
+    setShowAdminPassword(false);
+  }
+
+  function toggleUninstallMode() {
+    if (uninstallModeEnabled) {
+      void invoke<boolean>("set_uninstall_mode", { password: "" })
+        .then(() => { setUninstallModeEnabled(false); setMessage("Gerenciamento de instalações desativado."); })
+        .catch((error) => setMessage(`Não foi possível desativar o gerenciamento: ${String(error)}`));
+      return;
+    }
+    setAdminPassword("");
+    setAdminError("");
+    setShowAdminPassword(false);
+    setAdminDialogMode("uninstall");
+  }
+
+  async function requestAdminAuthorization(event: React.FormEvent) {
     event.preventDefault();
-    try { await invoke("exit_launcher", { password: exitPassword }); }
-    catch (error) { setExitError(String(error)); }
+    try {
+      if (adminDialogMode === "exit") {
+        await invoke("exit_launcher", { password: adminPassword });
+        return;
+      }
+      const enabled = await invoke<boolean>("set_uninstall_mode", { password: adminPassword });
+      setUninstallModeEnabled(enabled);
+      closeAdminDialog();
+      setMessage(enabled ? "Gerenciamento de instalações ativado. A desinstalação está disponível." : "Gerenciamento de instalações desativado.");
+    } catch (error) { setAdminError(String(error)); }
   }
 
   return <main className="launcher-shell">
-    <header className="topbar"><div><p className="eyebrow">LIGA DE JOGOS</p><h1>UEFS</h1></div><div className="topbar-actions"><p className="status">{Object.keys(installations).length} instalados</p><button className="exit-action" onClick={openExitDialog}>Sair</button></div></header>
+    <header className="topbar"><div><p className="eyebrow">LIGA DE JOGOS</p><h1>UEFS</h1></div><div className="topbar-actions"><p className="status">{Object.keys(installations).length} instalados</p><button className={`admin-action ${uninstallModeEnabled ? "is-active" : ""}`} aria-pressed={uninstallModeEnabled} onClick={toggleUninstallMode}>{uninstallModeEnabled ? "Encerrar gerenciamento" : "Gerenciar instalações"}</button><button className="exit-action" onClick={openExitDialog}>Sair</button></div></header>
     <section ref={catalogRef} aria-label="Catálogo de jogos" className="catalog" data-downloading-game={downloadingGameId ?? undefined}>
       {games.map((item, index) => <button ref={(element) => { cardRefs.current[index] = element; }} className={`game-card ${selected === index ? "is-selected" : ""}`} key={item.id} onClick={() => setSelected(index)} style={{ "--accent": item.accent } as React.CSSProperties}>
         <span className="cover" aria-hidden="true">{coverSources[item.id] ? <img src={coverSources[item.id]} alt="" /> : String(index + 1).padStart(2, "0")}</span><span className="game-title">{item.title}</span><span className="game-state">{item.builds[platform] ? installations[item.id] ? "Pronto para jogar" : "Não instalado" : "Indisponível nesta plataforma"}</span>
       </button>)}
     </section>
-    <section className="game-details" aria-live="polite"><div><p className="eyebrow">SELECIONADO · {platform.toUpperCase()}</p><h2>{game.title}</h2><p>{game.summary}</p></div><div className="game-actions"><button className="primary-action" disabled={busy || gameRunning || !build} onClick={activateSelectedGame}>{busy ? "Aguarde…" : gameRunning ? "Em execução" : !build ? "Indisponível" : installation ? "Jogar" : "Instalar"}</button>{installation && <button className="secondary-action" disabled={busy || gameRunning} onClick={() => void uninstallGame()}>Desinstalar</button>}</div></section>
+    <section className="game-details" aria-live="polite"><div><p className="eyebrow">SELECIONADO · {platform.toUpperCase()}</p><h2>{game.title}</h2><p>{game.summary}</p></div><div className="game-actions"><button className="primary-action" disabled={busy || gameRunning || !build} onClick={activateSelectedGame}>{busy ? "Aguarde…" : gameRunning ? "Em execução" : !build ? "Indisponível" : installation ? "Jogar" : "Instalar"}</button>{installation && uninstallModeEnabled && <button className="secondary-action" disabled={busy || gameRunning} onClick={() => void uninstallGame()}>Desinstalar</button>}</div></section>
     <footer><span>{message}</span><span>Setas / WASD ou direcional · Enter / A para selecionar</span></footer>
-    {exitDialogOpen && <div className="dialog-backdrop" role="presentation"><form className="exit-dialog" onSubmit={requestExit} role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title"><p className="eyebrow">ADMINISTRAÇÃO</p><h2 id="exit-dialog-title">Autorização necessária</h2><p>Digite a senha para fechar o launcher.</p><label htmlFor="admin-password">Senha de autorização</label><input ref={passwordInput} id="admin-password" type="password" value={exitPassword} onChange={(event) => setExitPassword(event.target.value)} autoComplete="current-password" />{exitError && <p className="dialog-error">{exitError}</p>}<div className="dialog-actions"><button type="button" className="cancel-action" onClick={() => setExitDialogOpen(false)}>Cancelar</button><button type="submit" className="confirm-action">Confirmar saída</button></div></form></div>}
+    {adminDialogOpen && <div className="dialog-backdrop" role="presentation"><form className="exit-dialog" onSubmit={requestAdminAuthorization} role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title"><p className="eyebrow">ADMINISTRAÇÃO</p><h2 id="admin-dialog-title">Autorização necessária</h2><p>{adminDialogMode === "exit" ? "Digite a senha para fechar o launcher." : "Digite a senha para habilitar a desinstalação de jogos."}</p><label htmlFor="admin-password">Senha de autorização</label><div className="password-field"><input ref={passwordInput} id="admin-password" type={showAdminPassword ? "text" : "password"} value={adminPassword} onChange={(event) => setAdminPassword(event.target.value)} autoComplete="current-password" /><button type="button" className="password-toggle" onClick={() => setShowAdminPassword((current) => !current)} aria-label={showAdminPassword ? "Ocultar senha" : "Mostrar senha"} aria-pressed={showAdminPassword}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.7" />{showAdminPassword && <path d="m4 4 16 16" />}</svg></button></div>{adminError && <p className="dialog-error">{adminError}</p>}<div className="dialog-actions"><button type="button" className="cancel-action" onClick={closeAdminDialog}>Cancelar</button><button type="submit" className="confirm-action">{adminDialogMode === "exit" ? "Confirmar saída" : "Habilitar"}</button></div></form></div>}
   </main>;
 }
 
