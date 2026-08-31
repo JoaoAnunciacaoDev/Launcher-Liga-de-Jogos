@@ -70,7 +70,7 @@ O frontend conversa com o backend nativo somente por comandos locais do Tauri. N
    npm run tauri dev
    ```
 
-> `.env` é ignorado pelo Git e não deve ser enviado ao repositório. A senha é lida durante a compilação e incorporada ao executável. Ela protege o modo quiosque, mas não deve ser tratada como segredo forte: alguém com acesso técnico ao binário pode extraí-la.
+> `.env` é ignorado pelo Git e não deve ser enviado ao repositório. A senha é lida durante a compilação e incorporada ao executável. Ela protege o programa em Eventos, mas não deve ser tratada como segredo forte: alguém com acesso técnico ao binário pode extraí-la.
 
 ## Controles
 
@@ -159,18 +159,14 @@ Arquivos gerados:
 
 ```text
 src-tauri/target/release/liga-jogos-launcher.exe
-src-tauri/target/release/bundle/nsis/Liga de Jogos UEFS_*_x64-setup.exe
-src-tauri/target/release/bundle/msi/Liga de Jogos UEFS_*_x64_en-US.msi
 ```
-
-O `.exe` é a opção portátil. O instalador NSIS cria atalhos e desinstalador.
 
 ## Gerar Releases Windows e Linux no GitHub
 
 O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) gera automaticamente:
 
-- Windows: `.exe`, instalador NSIS e `.msi`.
-- Linux: `.AppImage` e `.deb`.
+- Windows: `.exe`.
+- Linux: `.AppImage`.
 
 Ele só executa quando uma tag começando com `v` é enviada; `git pull`, push comum para `main` e Pull Requests não iniciam uma Release.
 
