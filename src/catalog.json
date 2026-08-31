@@ -17,22 +17,22 @@
     }
   },
   {
-      "id": "forca",
-      "title": "Forca",
-      "summary": "Um jogo de Forca. Por Giulia Loula",
-      "accent": "#f6a73a",
-      "cover_url": "https://drive.usercontent.google.com/download?id=1ZqpFd5Xb4lF03H--tOggd2LmrEOsUTWM&export=download&confirm=t",
-      "builds": {
-        "windows": {
-          "downloadUrl": "https://drive.usercontent.google.com/download?id=1A9cWOTA4eJSgT7Tttz0yzOHlRVVJ-sSc&export=download&confirm=t",
-          "executable": "forca.exe"
-        },
-        "linux": {
-          "downloadUrl": "https://drive.usercontent.google.com/download?id=1S9E12GDOc3DNqXu2JHCqtM50uBWZP7Bi&export=download&confirm=t",
-          "executable": "forca.x86_64"
-        }
+    "id": "forca",
+    "title": "Forca",
+    "summary": "Um jogo de Forca. Por Giulia Loula",
+    "accent": "#f6a73a",
+    "cover_url": "https://drive.usercontent.google.com/download?id=1ZqpFd5Xb4lF03H--tOggd2LmrEOsUTWM&export=download&confirm=t",
+    "builds": {
+      "windows": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1A9cWOTA4eJSgT7Tttz0yzOHlRVVJ-sSc&export=download&confirm=t",
+        "executable": "forca.exe"
+      },
+      "linux": {
+        "downloadUrl": "https://drive.usercontent.google.com/download?id=1S9E12GDOc3DNqXu2JHCqtM50uBWZP7Bi&export=download&confirm=t",
+        "executable": "forca.x86_64"
       }
-    },
+    }
+  },
   {
     "id": "muranga",
     "title": "Muranga",
@@ -50,7 +50,7 @@
       }
     }
   },
-{
+  {
     "id": "embraceOfDarkness",
     "title": "Embrace Of Darkness",
     "summary": "Você acorda em um misterioso quarto escuro, cabe a você descobrir seus segredos e fugir.\nFeito por João Victor Anunciação da Silva.",

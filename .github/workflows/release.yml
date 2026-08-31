@@ -2,14 +2,45 @@ name: Publicar release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
+  quality:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependências do Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential curl file libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev libwebkit2gtk-4.1-dev libxdo-dev wget
+      - name: Configurar Rust
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+        env:
+          LAUNCHER_ADMIN_PASSWORD: ${{ secrets.LAUNCHER_ADMIN_PASSWORD || 'lint-only-password' }}
+
   build-linux:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: quality
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +69,8 @@ jobs:
           if-no-files-found: error
 
   build-windows:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: quality
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

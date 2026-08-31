@@ -74,11 +74,11 @@ O frontend conversa com o backend nativo somente por comandos locais do Tauri. N
 
 ## Controles
 
-| Ação | Teclado | Controle |
-| --- | --- | --- |
-| Mover seleção | Setas ou WASD | Direcional ou analógico esquerdo |
-| Instalar / jogar | Enter ou Espaço | Botão A |
-| Cancelar diálogo de saída | — | Botão B |
+| Ação                      | Teclado         | Controle                         |
+| ------------------------- | --------------- | -------------------------------- |
+| Mover seleção             | Setas ou WASD   | Direcional ou analógico esquerdo |
+| Instalar / jogar          | Enter ou Espaço | Botão A                          |
+| Cancelar diálogo de saída | —               | Botão B                          |
 
 O botão **Sair** abre uma confirmação com senha. `Alt + F4` é bloqueado pelo launcher.
 
