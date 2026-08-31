@@ -1,0 +1,10 @@
+[
+  {
+    "id": "muranga",
+    "title": "Muranga",
+    "summary": "Jogo de teste da Liga de Jogos UEFS.",
+    "accent": "#f6a43a",
+    "sourcePath": "C:\\Users\\js528\\Documents\\LigaDeJogos\\Muranga.zip",
+    "executable": "Muranga.exe"
+  }
+]

@@ -4,6 +4,7 @@ body { margin: 0; min-width: 320px; min-height: 100vh; }
 button { font: inherit; }
 .launcher-shell { min-height: 100vh; padding: clamp(1.5rem, 4vw, 4rem); display: grid; grid-template-rows: auto 1fr auto auto; gap: clamp(1.5rem, 3vw, 3rem); background: radial-gradient(circle at top right, #2b1d46 0, transparent 38%), #11121a; }
 .topbar, .game-details, footer { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+.topbar-actions { display: flex; align-items: center; gap: .75rem; }
 .eyebrow { margin: 0 0 .25rem; color: #b8b3cc; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
 h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: clamp(1.6rem, 3vw, 2.5rem); }
@@ -21,4 +22,15 @@ h1 { margin-bottom: 0; font-size: clamp(1.6rem, 3vw, 2.5rem); }
 .primary-action { border: 0; border-radius: .8rem; padding: .9rem 1.6rem; background: #f6a43a; color: #231609; font-weight: 900; cursor: pointer; }
 .primary-action:focus-visible { outline: 3px solid white; outline-offset: 3px; }
 footer { color: #9d99ae; font-size: .82rem; }
-@media (max-width: 620px) { .launcher-shell { padding: 1.25rem; } .topbar, .game-details, footer { align-items: flex-start; flex-direction: column; gap: .8rem; } .game-card { width: 76vw; } }
+.exit-action, .cancel-action, .confirm-action { border: 1px solid #5b576d; border-radius: .65rem; padding: .55rem .85rem; color: #f8f7ff; background: #272535; cursor: pointer; }
+.exit-action:focus-visible, .cancel-action:focus-visible, .confirm-action:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 1.5rem; background: rgb(9 9 15 / .78); }
+.exit-dialog { width: min(100%, 430px); padding: 2rem; border: 1px solid #5a526c; border-radius: 1.1rem; background: #211f2d; box-shadow: 0 1rem 4rem rgb(0 0 0 / .45); }
+.exit-dialog h2 { margin-bottom: .5rem; }
+.exit-dialog > p:not(.eyebrow) { color: #c6c2d1; }
+.exit-dialog label { display: block; margin: 1.3rem 0 .45rem; font-size: .9rem; font-weight: 700; }
+.exit-dialog input { width: 100%; border: 1px solid #706a82; border-radius: .6rem; padding: .8rem; color: #fff; background: #161520; font: inherit; }
+.dialog-error { margin: .75rem 0 0; color: #ffadad; font-size: .9rem; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: .7rem; margin-top: 1.5rem; }
+.confirm-action { border-color: #f6a43a; color: #281807; background: #f6a43a; font-weight: 800; }
+@media (max-width: 620px) { .launcher-shell { padding: 1.25rem; } .topbar, .game-details, footer { align-items: flex-start; flex-direction: column; gap: .8rem; } .game-card { width: 76vw; } .topbar-actions { width: 100%; justify-content: space-between; } }
