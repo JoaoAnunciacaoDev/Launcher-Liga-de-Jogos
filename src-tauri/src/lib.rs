@@ -43,9 +43,10 @@ struct ExitState { close_allowed: AtomicBool }
 struct AdminPassword(String);
 
 fn load_admin_password() -> String {
-    // Em desenvolvimento, carrega o .env na raiz do projeto sem sobrescrever uma variável já definida pelo sistema.
-    let _ = dotenvy::dotenv();
-    std::env::var("LAUNCHER_ADMIN_PASSWORD").unwrap_or_default()
+    std::env::var("LAUNCHER_ADMIN_PASSWORD")
+        .ok()
+        .filter(|password| !password.is_empty())
+        .unwrap_or_else(|| option_env!("EMBEDDED_ADMIN_PASSWORD").unwrap_or_default().to_owned())
 }
 
 #[tauri::command]
