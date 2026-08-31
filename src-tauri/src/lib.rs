@@ -17,6 +17,7 @@ struct DownloadProgress { game_id: String, downloaded_bytes: u64, total_bytes: O
 struct CatalogBuild { download_url: String, executable: String }
 
 #[derive(Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct CatalogGame {
     id: String,
     title: String,

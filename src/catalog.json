@@ -20,7 +20,7 @@
       "id": "forca",
       "title": "Forca",
       "summary": "Um jogo de Forca. Por Giulia Loula",
-      "accent": "#f6a43a",
+      "accent": "#f6a73a",
       "cover_url": "https://drive.usercontent.google.com/download?id=1ZqpFd5Xb4lF03H--tOggd2LmrEOsUTWM&export=download&confirm=t",
       "builds": {
         "windows": {
@@ -37,7 +37,7 @@
     "id": "muranga",
     "title": "Muranga",
     "summary": "Um jogo de plataforma de precisão desafiador semelhante a Celeste.\nColete as Murangas e divirta-se!!\nFeito por João Victor Anunciação da Silva.",
-    "accent": "#f6a43a",
+    "accent": "#f6a23a",
     "cover_url": "https://drive.usercontent.google.com/download?id=1k19uZZblrPCQuNF1NEZChx8_bZq_jrIk&export=download&confirm=t",
     "builds": {
       "windows": {
@@ -54,7 +54,7 @@
     "id": "embraceOfDarkness",
     "title": "Embrace Of Darkness",
     "summary": "Você acorda em um misterioso quarto escuro, cabe a você descobrir seus segredos e fugir.\nFeito por João Victor Anunciação da Silva.",
-    "accent": "#f6a43a",
+    "accent": "#f6a63a",
     "cover_url": "https://drive.usercontent.google.com/download?id=15c489h9SnztJ4xptqBgTMa8MLkKoHKAx&export=download&confirm=t",
     "builds": {
       "windows": {
@@ -71,7 +71,7 @@
     "id": "typo",
     "title": "Typo",
     "summary": "Um jogo de ritmo para praticar o conhecer o teclado.",
-    "accent": "#f6a43a",
+    "accent": "#f6a93a",
     "cover_url": "https://drive.usercontent.google.com/download?id=1iwznNgULNzl-xd5OG6dz1ZwO74-8KLdb&export=download&confirm=t",
     "builds": {
       "windows": {
@@ -88,7 +88,7 @@
     "id": "plantaCarnivora",
     "title": "Planta Carnívora",
     "summary": "Jogo de labirinto em que você tem que alimentar as plantas carnívoras dentro do tempo. Feito por Giulia Loula",
-    "accent": "#f6a43a",
+    "accent": "#f6a13a",
     "cover_url": "https://drive.usercontent.google.com/download?id=1zohonlKcuUezb4cocHl4RemwUJvR199a&export=download&confirm=t",
     "builds": {
       "windows": {

@@ -27,6 +27,7 @@ function App() {
   const [exitError, setExitError] = useState("");
   const interactionLocked = useRef(false);
   const passwordInput = useRef<HTMLInputElement>(null);
+  const catalogRef = useRef<HTMLElement>(null);
   const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const game = games[selected] ?? fallbackGames[0];
   const build = game.builds[platform];
@@ -137,7 +138,16 @@ function App() {
 
   useEffect(() => { if (exitDialogOpen) passwordInput.current?.focus(); }, [exitDialogOpen]);
 
-  useEffect(() => { cardRefs.current[selected]?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" }); }, [selected]);
+  useEffect(() => {
+    const catalogElement = catalogRef.current;
+    const card = cardRefs.current[selected];
+    if (!catalogElement || !card) return;
+    if (selected < 3) {
+      catalogElement.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    card.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [selected]);
 
   async function installGame() {
     setBusy(true); setDownloadingGameId(game.id); setMessage(`Instalando ${game.title}…`);
@@ -194,8 +204,8 @@ function App() {
   }
 
   return <main className="launcher-shell">
-    <header className="topbar"><div><p className="eyebrow">LIGA DE JOGOS</p><h1>UEFS Launcher</h1></div><div className="topbar-actions"><p className="status">{Object.keys(installations).length} instalados</p><button className="exit-action" onClick={openExitDialog}>Sair</button></div></header>
-    <section aria-label="Catálogo de jogos" className="catalog" data-downloading-game={downloadingGameId ?? undefined}>
+    <header className="topbar"><div><p className="eyebrow">LIGA DE JOGOS</p><h1>UEFS</h1></div><div className="topbar-actions"><p className="status">{Object.keys(installations).length} instalados</p><button className="exit-action" onClick={openExitDialog}>Sair</button></div></header>
+    <section ref={catalogRef} aria-label="Catálogo de jogos" className="catalog" data-downloading-game={downloadingGameId ?? undefined}>
       {games.map((item, index) => <button ref={(element) => { cardRefs.current[index] = element; }} className={`game-card ${selected === index ? "is-selected" : ""}`} key={item.id} onClick={() => setSelected(index)} style={{ "--accent": item.accent } as React.CSSProperties}>
         <span className="cover" aria-hidden="true">{coverSources[item.id] ? <img src={coverSources[item.id]} alt="" /> : String(index + 1).padStart(2, "0")}</span><span className="game-title">{item.title}</span><span className="game-state">{item.builds[platform] ? installations[item.id] ? "Pronto para jogar" : "Não instalado" : "Indisponível nesta plataforma"}</span>
       </button>)}
