@@ -17,6 +17,16 @@ pub fn run() {
         .manage(UninstallModeState::default())
         .manage(AdminPassword(load_admin_password()))
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let window = app
+                .get_webview_window("main")
+                .ok_or("A janela principal não foi encontrada.")?;
+
+            window.set_decorations(false)?;
+            window.set_resizable(false)?;
+            window.set_fullscreen(true)?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             launcher::current_platform,
             catalog::load_catalog,
