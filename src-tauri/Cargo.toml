@@ -2,7 +2,6 @@
 name = "liga-jogos-launcher"
 version = "0.1.0"
 description = "Launcher de jogos da Liga de Jogos UEFS"
-authors = ["Liga de Jogos UEFS"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
