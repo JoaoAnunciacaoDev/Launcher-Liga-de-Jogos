@@ -477,6 +477,7 @@ function App() {
       </section>
       <footer>
         <span>{message}</span>
+        <span>Feito por João Victor Anunciação da Silva</span>
         <span>Setas / WASD ou direcional · Enter / A para selecionar</span>
       </footer>
       {adminDialogOpen && (
