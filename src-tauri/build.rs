@@ -19,7 +19,7 @@ fn main() {
         .or_else(password_from_dotenv)
         .expect("Defina LAUNCHER_ADMIN_PASSWORD no ambiente ou no arquivo .env antes de compilar o launcher.");
 
-    // A senha é uma barreira de administração para o modo quiosque. Ela é incorporada ao binário por decisão do projeto.
+    // A senha protege a ativação e desativação do modo evento. Ela é incorporada ao binário por decisão do projeto.
     println!("cargo:rustc-env=EMBEDDED_ADMIN_PASSWORD={password}");
     tauri_build::build()
 }

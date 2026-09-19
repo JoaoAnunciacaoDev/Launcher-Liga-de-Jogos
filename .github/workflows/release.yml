@@ -58,14 +58,16 @@ jobs:
         run: rustup toolchain install stable --profile minimal && rustup default stable
       - run: npm ci
       - run: npm run tauri icon -- src-tauri/icons/app-icon.png --output src-tauri/icons
-      - run: npm run tauri build -- --bundles appimage
+      - run: npm run tauri build -- --bundles appimage,deb
         env:
           LAUNCHER_ADMIN_PASSWORD: ${{ secrets.LAUNCHER_ADMIN_PASSWORD }}
       - name: Guardar pacotes Linux
         uses: actions/upload-artifact@v4
         with:
-          name: linux-appimage
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          name: linux-packages
+          path: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: error
 
   build-windows:

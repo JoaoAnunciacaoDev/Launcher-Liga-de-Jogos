@@ -218,6 +218,10 @@ footer {
   color: #281807;
   background: #f6a43a;
 }
+.exit-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 .dialog-backdrop {
   position: fixed;
   inset: 0;

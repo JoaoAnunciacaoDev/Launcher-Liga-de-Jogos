@@ -11,7 +11,7 @@ pub struct ExitState {
 }
 
 #[derive(Default)]
-pub struct UninstallModeState {
+pub struct EventModeState {
     pub enabled: AtomicBool,
 }
 

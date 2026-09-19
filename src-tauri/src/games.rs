@@ -1,6 +1,6 @@
 use crate::{
     models::{DownloadProgress, Installation},
-    state::UninstallModeState,
+    state::EventModeState,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use std::{
@@ -225,10 +225,10 @@ pub async fn install_game(
 pub async fn uninstall_game(
     app: tauri::AppHandle,
     game_id: String,
-    uninstall_mode: State<'_, UninstallModeState>,
+    event_mode: State<'_, EventModeState>,
 ) -> Result<(), String> {
-    if !uninstall_mode.enabled.load(Ordering::SeqCst) {
-        return Err("A desinstalação está bloqueada. Habilite o gerenciamento de instalações com a senha administrativa.".into());
+    if event_mode.enabled.load(Ordering::SeqCst) {
+        return Err("A desinstalação está bloqueada enquanto o modo evento estiver ativo.".into());
     }
     tauri::async_runtime::spawn_blocking(move || {
         safe_game_id(&game_id)?;

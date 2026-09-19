@@ -5,7 +5,7 @@ mod launcher;
 mod models;
 mod state;
 
-use state::{load_admin_password, AdminPassword, ExitState, LaunchState, UninstallModeState};
+use state::{load_admin_password, AdminPassword, EventModeState, ExitState, LaunchState};
 use std::sync::atomic::Ordering;
 use tauri::{Manager, WindowEvent};
 
@@ -14,7 +14,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(LaunchState::default())
         .manage(ExitState::default())
-        .manage(UninstallModeState::default())
+        .manage(EventModeState::default())
         .manage(AdminPassword(load_admin_password()))
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
@@ -35,16 +35,21 @@ pub fn run() {
             games::install_game,
             games::uninstall_game,
             launcher::launch_game,
-            admin::set_uninstall_mode,
+            admin::event_mode_enabled,
+            admin::toggle_event_mode,
             admin::exit_launcher
         ])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                if !window
+                let event_mode_enabled = window
+                    .state::<EventModeState>()
+                    .enabled
+                    .load(Ordering::SeqCst);
+                let close_allowed = window
                     .state::<ExitState>()
                     .close_allowed
-                    .load(Ordering::SeqCst)
-                {
+                    .load(Ordering::SeqCst);
+                if event_mode_enabled && !close_allowed {
                     api.prevent_close();
                 }
             }

@@ -33,11 +33,11 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [downloadingGameId, setDownloadingGameId] = useState<string | null>(null);
   const [gameRunning, setGameRunning] = useState(false);
-  const [adminDialogMode, setAdminDialogMode] = useState<"exit" | "uninstall" | null>(null);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [uninstallModeEnabled, setUninstallModeEnabled] = useState(false);
+  const [eventModeEnabled, setEventModeEnabled] = useState(false);
   const interactionLocked = useRef(false);
   const passwordInput = useRef<HTMLInputElement>(null);
   const catalogRef = useRef<HTMLElement>(null);
@@ -45,7 +45,6 @@ function App() {
   const game = games[selected] ?? fallbackGames[0];
   const build = game.builds[platform];
   const installation = installations[game.id];
-  const adminDialogOpen = adminDialogMode !== null;
 
   const installGame = useCallback(async () => {
     setBusy(true);
@@ -116,6 +115,7 @@ function App() {
 
   useEffect(() => {
     void invoke<Platform>("current_platform").then(setPlatform);
+    void invoke<boolean>("event_mode_enabled").then(setEventModeEnabled);
   }, []);
 
   useEffect(() => {
@@ -335,52 +335,38 @@ function App() {
     }
   }
 
-  function openExitDialog() {
-    setAdminPassword("");
-    setAdminError("");
-    setShowAdminPassword(false);
-    setAdminDialogMode("exit");
+  async function exitLauncher() {
+    try {
+      await invoke("exit_launcher");
+    } catch (error) {
+      setMessage(`Não foi possível sair: ${String(error)}`);
+    }
   }
 
   function closeAdminDialog() {
-    setAdminDialogMode(null);
+    setAdminDialogOpen(false);
     setAdminPassword("");
     setAdminError("");
     setShowAdminPassword(false);
   }
 
-  function toggleUninstallMode() {
-    if (uninstallModeEnabled) {
-      void invoke<boolean>("set_uninstall_mode", { password: "" })
-        .then(() => {
-          setUninstallModeEnabled(false);
-          setMessage("Gerenciamento de instalações desativado.");
-        })
-        .catch((error) =>
-          setMessage(`Não foi possível desativar o gerenciamento: ${String(error)}`),
-        );
-      return;
-    }
+  function requestEventModeToggle() {
     setAdminPassword("");
     setAdminError("");
     setShowAdminPassword(false);
-    setAdminDialogMode("uninstall");
+    setAdminDialogOpen(true);
   }
 
   async function requestAdminAuthorization(event: React.FormEvent) {
     event.preventDefault();
     try {
-      if (adminDialogMode === "exit") {
-        await invoke("exit_launcher", { password: adminPassword });
-        return;
-      }
-      const enabled = await invoke<boolean>("set_uninstall_mode", { password: adminPassword });
-      setUninstallModeEnabled(enabled);
+      const enabled = await invoke<boolean>("toggle_event_mode", { password: adminPassword });
+      setEventModeEnabled(enabled);
       closeAdminDialog();
       setMessage(
         enabled
-          ? "Gerenciamento de instalações ativado. A desinstalação está disponível."
-          : "Gerenciamento de instalações desativado.",
+          ? "Modo evento ativado. Saída e desinstalação estão bloqueadas."
+          : "Modo evento desativado. Controles administrativos liberados.",
       );
     } catch (error) {
       setAdminError(String(error));
@@ -397,13 +383,17 @@ function App() {
         <div className="topbar-actions">
           <p className="status">{Object.keys(installations).length} instalados</p>
           <button
-            className={`admin-action ${uninstallModeEnabled ? "is-active" : ""}`}
-            aria-pressed={uninstallModeEnabled}
-            onClick={toggleUninstallMode}
+            className={`admin-action ${eventModeEnabled ? "is-active" : ""}`}
+            aria-pressed={eventModeEnabled}
+            onClick={requestEventModeToggle}
           >
-            {uninstallModeEnabled ? "Encerrar gerenciamento" : "Gerenciar instalações"}
+            {eventModeEnabled ? "Desativar modo evento" : "Ativar modo evento"}
           </button>
-          <button className="exit-action" onClick={openExitDialog}>
+          <button
+            className="exit-action"
+            disabled={eventModeEnabled}
+            onClick={() => void exitLauncher()}
+          >
             Sair
           </button>
         </div>
@@ -464,7 +454,7 @@ function App() {
                     ? "Jogar"
                     : "Instalar"}
           </button>
-          {installation && uninstallModeEnabled && (
+          {installation && !eventModeEnabled && (
             <button
               className="secondary-action"
               disabled={busy || gameRunning}
@@ -491,11 +481,7 @@ function App() {
           >
             <p className="eyebrow">ADMINISTRAÇÃO</p>
             <h2 id="admin-dialog-title">Autorização necessária</h2>
-            <p>
-              {adminDialogMode === "exit"
-                ? "Digite a senha para fechar o launcher."
-                : "Digite a senha para habilitar a desinstalação de jogos."}
-            </p>
+            <p>Digite a senha para {eventModeEnabled ? "desativar" : "ativar"} o modo evento.</p>
             <label htmlFor="admin-password">Senha de autorização</label>
             <div className="password-field">
               <input
@@ -526,7 +512,7 @@ function App() {
                 Cancelar
               </button>
               <button type="submit" className="confirm-action">
-                {adminDialogMode === "exit" ? "Confirmar saída" : "Habilitar"}
+                {eventModeEnabled ? "Desativar modo evento" : "Ativar modo evento"}
               </button>
             </div>
           </form>

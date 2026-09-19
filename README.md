@@ -11,7 +11,8 @@ Launcher desktop para instalar, iniciar e organizar os jogos da Liga de Jogos UE
 - Capas baixadas e armazenadas localmente.
 - Apenas um jogo pode executar por vez.
 - O launcher aguarda o encerramento do jogo e volta a aparecer automaticamente.
-- Saída protegida por senha administrativa.
+- Modo normal com saída e desinstalação liberadas.
+- Modo evento protegido por senha, bloqueando saída e desinstalação.
 - Desinstalação de jogo e remoção da capa local correspondente.
 - Pacotes para Windows e Linux gerados pelo GitHub Actions em tags de versão.
 
@@ -70,7 +71,7 @@ O frontend conversa com o backend nativo somente por comandos locais do Tauri. N
    npm run tauri dev
    ```
 
-> `.env` é ignorado pelo Git e não deve ser enviado ao repositório. A senha é lida durante a compilação e incorporada ao executável. Ela protege o programa em Eventos, mas não deve ser tratada como segredo forte: alguém com acesso técnico ao binário pode extraí-la.
+> `.env` é ignorado pelo Git e não deve ser enviado ao repositório. A senha é lida durante a compilação e incorporada ao executável. Ela protege a ativação e a desativação do modo evento, mas não deve ser tratada como segredo forte: alguém com acesso técnico ao binário pode extraí-la.
 
 ## Controles
 
@@ -78,9 +79,9 @@ O frontend conversa com o backend nativo somente por comandos locais do Tauri. N
 | ------------------------- | --------------- | -------------------------------- |
 | Mover seleção             | Setas ou WASD   | Direcional ou analógico esquerdo |
 | Instalar / jogar          | Enter ou Espaço | Botão A                          |
-| Cancelar diálogo de saída | —               | Botão B                          |
+| Cancelar diálogo de senha | —               | Botão B                          |
 
-O botão **Sair** abre uma confirmação com senha. `Alt + F4` é bloqueado pelo launcher.
+O launcher inicia no modo normal, permitindo sair e desinstalar jogos sem senha. O botão **Ativar modo evento** solicita a senha administrativa e bloqueia essas duas ações. A mesma senha é exigida para desativar o modo evento. Enquanto ele estiver ativo, `Alt + F4` também é bloqueado.
 
 ## Catálogo de jogos
 
@@ -166,7 +167,7 @@ src-tauri/target/release/liga-jogos-launcher.exe
 O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) gera automaticamente:
 
 - Windows: `.exe`.
-- Linux: `.AppImage`.
+- Linux: `.AppImage` e `.deb`.
 
 Ele só executa quando uma tag começando com `v` é enviada; `git pull`, push comum para `main` e Pull Requests não iniciam uma Release.
 
