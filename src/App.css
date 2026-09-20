@@ -37,6 +37,7 @@ footer {
 }
 .topbar-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
 }
@@ -206,6 +207,12 @@ footer {
   background: #272535;
   cursor: pointer;
 }
+.admin-action:disabled,
+.cancel-action:disabled,
+.confirm-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 .exit-action:focus-visible,
 .admin-action:focus-visible,
 .cancel-action:focus-visible,
@@ -261,6 +268,96 @@ footer {
   color: #fff;
   background: #161520;
   font: inherit;
+}
+.catalog-dialog {
+  display: flex;
+  width: min(92vw, 900px);
+  max-height: 90vh;
+  flex-direction: column;
+}
+.catalog-editor-list {
+  min-height: 12rem;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+.catalog-editor-game,
+.catalog-build {
+  border: 1px solid #706a82;
+  border-radius: 0.75rem;
+}
+.catalog-editor-game {
+  position: relative;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+.catalog-editor-game > legend,
+.catalog-build > legend {
+  padding: 0 0.4rem;
+  color: #ffd18e;
+  font-weight: 800;
+}
+.catalog-editor-grid,
+.catalog-build {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.catalog-editor-game label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+}
+.catalog-editor-game input,
+.catalog-editor-game textarea {
+  width: 100%;
+  border: 1px solid #5a566b;
+  border-radius: 0.5rem;
+  padding: 0.65rem;
+  color: #fff;
+  background: #161520;
+  font: inherit;
+}
+.catalog-editor-game textarea {
+  min-height: 4rem;
+  resize: vertical;
+}
+.catalog-editor-game .full-row {
+  grid-column: 1 / -1;
+}
+.catalog-build {
+  margin-top: 1rem;
+  padding: 0.8rem;
+}
+.color-field {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  gap: 0.4rem;
+}
+.color-field input[type="color"] {
+  height: 2.65rem;
+  padding: 0.2rem;
+}
+.add-game-action,
+.remove-game-action {
+  border: 1px solid #706a82;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  color: #f8f7ff;
+  background: #272535;
+  cursor: pointer;
+}
+.remove-game-action {
+  margin-top: 1rem;
+  color: #ffb8b8;
+}
+.add-game-action {
+  width: 100%;
+}
+.catalog-dialog code {
+  color: #ffd18e;
 }
 .exit-dialog input::-ms-reveal {
   display: none;
@@ -335,5 +432,9 @@ footer {
   .topbar-actions {
     width: 100%;
     justify-content: space-between;
+  }
+  .catalog-editor-grid,
+  .catalog-build {
+    grid-template-columns: 1fr;
   }
 }

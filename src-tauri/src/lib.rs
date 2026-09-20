@@ -30,6 +30,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             launcher::current_platform,
             catalog::load_catalog,
+            catalog::get_catalog_json,
+            catalog::save_catalog,
             games::get_cached_cover,
             games::get_installation,
             games::install_game,

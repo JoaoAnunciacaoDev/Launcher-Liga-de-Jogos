@@ -16,14 +16,14 @@ pub struct DownloadProgress {
     pub total_bytes: Option<u64>,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CatalogBuild {
     pub download_url: String,
     pub executable: String,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CatalogGame {
     pub id: String,
@@ -40,4 +40,11 @@ pub struct CatalogResponse {
     pub games: Vec<CatalogGame>,
     pub source: String,
     pub detail: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedCatalogResponse {
+    pub games: Vec<CatalogGame>,
+    pub backup_path: String,
 }

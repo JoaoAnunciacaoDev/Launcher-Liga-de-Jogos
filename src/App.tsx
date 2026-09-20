@@ -5,6 +5,7 @@ import catalog from "./catalog.json";
 import "./App.css";
 
 type Platform = "windows" | "linux" | "unsupported";
+type CatalogPlatform = Exclude<Platform, "unsupported">;
 type GameBuild = { downloadUrl: string; executable: string };
 type Game = {
   id: string;
@@ -18,8 +19,12 @@ type Installation = { installPath: string; executablePath: string };
 type DownloadProgress = { gameId: string; downloadedBytes: number; totalBytes: number | null };
 type CatalogResponse = {
   games: Game[];
-  source: "remote" | "cache" | "bundled";
+  source: "remote" | "cache" | "bundled" | "local";
   detail: string | null;
+};
+type SavedCatalogResponse = { games: Game[]; backupPath: string };
+type EditableGame = Omit<Game, "builds"> & {
+  builds: Partial<Record<CatalogPlatform, GameBuild>>;
 };
 const fallbackGames = catalog as Game[];
 
@@ -37,6 +42,12 @@ function App() {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [catalogDialogOpen, setCatalogDialogOpen] = useState(false);
+  const [catalogDraft, setCatalogDraft] = useState<EditableGame[]>([]);
+  const [catalogPassword, setCatalogPassword] = useState("");
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogSaving, setCatalogSaving] = useState(false);
+  const [showCatalogPassword, setShowCatalogPassword] = useState(false);
   const [eventModeEnabled, setEventModeEnabled] = useState(false);
   const interactionLocked = useRef(false);
   const passwordInput = useRef<HTMLInputElement>(null);
@@ -126,7 +137,9 @@ function App() {
         setMessage(
           source === "remote"
             ? "Catálogo atualizado do Drive."
-            : `Não foi possível atualizar pelo Drive: ${detail ?? "erro desconhecido"}. ${source === "cache" ? "Usando catálogo salvo localmente." : "Usando catálogo embutido no launcher."}`,
+            : source === "local"
+              ? "Usando catálogo editado neste launcher."
+              : `Não foi possível atualizar pelo Drive: ${detail ?? "erro desconhecido"}. ${source === "cache" ? "Usando catálogo salvo localmente." : "Usando catálogo embutido no launcher."}`,
         );
       })
       .catch(() => setMessage("Usando o catálogo local. Não foi possível atualizar pelo Drive."));
@@ -207,8 +220,9 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (adminDialogOpen) return;
-      if (event.target instanceof Element && event.target.closest("button, input")) return;
+      if (adminDialogOpen || catalogDialogOpen) return;
+      if (event.target instanceof Element && event.target.closest("button, input, textarea"))
+        return;
       if (["ArrowRight", "d", "D"].includes(event.key)) {
         event.preventDefault();
         setSelected((current) => (current + 1) % games.length);
@@ -240,6 +254,7 @@ function App() {
   }, [
     busy,
     adminDialogOpen,
+    catalogDialogOpen,
     gameRunning,
     installation,
     game,
@@ -259,6 +274,12 @@ function App() {
       if (action === "up") setSelected((current) => (current - 3 + games.length) % games.length);
       if (action === "confirm") void activateSelectedGame();
       if (action === "back" && adminDialogOpen) closeAdminDialog();
+      if (action === "back" && catalogDialogOpen && !catalogSaving) {
+        setCatalogDialogOpen(false);
+        setCatalogPassword("");
+        setCatalogError("");
+        setShowCatalogPassword(false);
+      }
     };
 
     const pollGamepad = () => {
@@ -266,7 +287,7 @@ function App() {
       const activeActions = new Set<string>();
       if (gamepad) {
         const pressed = (button: number) => gamepad.buttons[button]?.pressed;
-        if (!adminDialogOpen) {
+        if (!adminDialogOpen && !catalogDialogOpen) {
           if (pressed(14) || gamepad.axes[0] < -0.6) activeActions.add("left");
           if (pressed(15) || gamepad.axes[0] > 0.6) activeActions.add("right");
           if (pressed(12) || gamepad.axes[1] < -0.6) activeActions.add("up");
@@ -282,7 +303,17 @@ function App() {
 
     animationFrame = window.requestAnimationFrame(pollGamepad);
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [busy, adminDialogOpen, gameRunning, installation, game, games, activateSelectedGame]);
+  }, [
+    busy,
+    adminDialogOpen,
+    catalogDialogOpen,
+    catalogSaving,
+    gameRunning,
+    installation,
+    game,
+    games,
+    activateSelectedGame,
+  ]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -373,6 +404,100 @@ function App() {
     }
   }
 
+  async function openCatalogEditor() {
+    setCatalogError("");
+    setCatalogPassword("");
+    setShowCatalogPassword(false);
+    try {
+      const contents = await invoke<string>("get_catalog_json");
+      const parsed = JSON.parse(contents) as Array<Game & { cover_url?: string }>;
+      setCatalogDraft(
+        parsed.map(({ cover_url, ...item }) => ({
+          ...item,
+          coverUrl: item.coverUrl ?? cover_url ?? "",
+        })),
+      );
+      setCatalogDialogOpen(true);
+    } catch (error) {
+      setMessage(`Não foi possível abrir o catálogo: ${String(error)}`);
+    }
+  }
+
+  function closeCatalogEditor() {
+    if (catalogSaving) return;
+    setCatalogDialogOpen(false);
+    setCatalogPassword("");
+    setCatalogError("");
+    setShowCatalogPassword(false);
+  }
+
+  async function saveCatalog(event: React.FormEvent) {
+    event.preventDefault();
+    setCatalogSaving(true);
+    setCatalogError("");
+    try {
+      const catalogToSave = catalogDraft.map((item) => ({
+        ...item,
+        coverUrl: item.coverUrl?.trim() || undefined,
+        builds: Object.fromEntries(
+          Object.entries(item.builds).filter(
+            ([, build]) => build.downloadUrl.trim() || build.executable.trim(),
+          ),
+        ),
+      }));
+      const result = await invoke<SavedCatalogResponse>("save_catalog", {
+        password: catalogPassword,
+        contents: JSON.stringify(catalogToSave, null, 2),
+      });
+      setGames(result.games);
+      setSelected(0);
+      setCatalogDialogOpen(false);
+      setCatalogPassword("");
+      setMessage(`Catálogo salvo. Backup anterior: ${result.backupPath}`);
+    } catch (error) {
+      setCatalogError(String(error));
+    } finally {
+      setCatalogSaving(false);
+    }
+  }
+
+  function updateCatalogGame(index: number, changes: Partial<EditableGame>) {
+    setCatalogDraft((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...changes } : item)),
+    );
+  }
+
+  function updateCatalogBuild(
+    gameIndex: number,
+    platformName: CatalogPlatform,
+    changes: Partial<GameBuild>,
+  ) {
+    setCatalogDraft((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== gameIndex) return item;
+        const build = item.builds[platformName] ?? { downloadUrl: "", executable: "" };
+        return {
+          ...item,
+          builds: { ...item.builds, [platformName]: { ...build, ...changes } },
+        };
+      }),
+    );
+  }
+
+  function addCatalogGame() {
+    setCatalogDraft((current) => [
+      ...current,
+      {
+        id: "novo-jogo",
+        title: "Novo jogo",
+        summary: "",
+        accent: "#f6a43a",
+        coverUrl: "",
+        builds: {},
+      },
+    ]);
+  }
+
   return (
     <main className="launcher-shell">
       <header className="topbar">
@@ -382,6 +507,13 @@ function App() {
         </div>
         <div className="topbar-actions">
           <p className="status">{Object.keys(installations).length} instalados</p>
+          <button
+            className="admin-action"
+            disabled={busy || gameRunning}
+            onClick={() => void openCatalogEditor()}
+          >
+            Editar catálogo
+          </button>
           <button
             className={`admin-action ${eventModeEnabled ? "is-active" : ""}`}
             aria-pressed={eventModeEnabled}
@@ -513,6 +645,169 @@ function App() {
               </button>
               <button type="submit" className="confirm-action">
                 {eventModeEnabled ? "Desativar modo evento" : "Ativar modo evento"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      {catalogDialogOpen && (
+        <div className="dialog-backdrop" role="presentation">
+          <form
+            className="exit-dialog catalog-dialog"
+            onSubmit={saveCatalog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="catalog-dialog-title"
+          >
+            <p className="eyebrow">ADMINISTRAÇÃO</p>
+            <h2 id="catalog-dialog-title">Editar catálogo local</h2>
+            <p>
+              Use IDs do Google Drive ou URLs HTTPS completas em <code>coverUrl</code> e{" "}
+              <code>downloadUrl</code>. A versão atual será copiada para o backup antes de salvar.
+            </p>
+            <div className="catalog-editor-list">
+              {catalogDraft.map((item, index) => (
+                <fieldset className="catalog-editor-game" key={`${item.id}-${index}`}>
+                  <legend>Jogo {index + 1}</legend>
+                  <div className="catalog-editor-grid">
+                    <label>
+                      ID do jogo
+                      <input
+                        value={item.id}
+                        onChange={(event) => updateCatalogGame(index, { id: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Título
+                      <input
+                        value={item.title}
+                        onChange={(event) =>
+                          updateCatalogGame(index, { title: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Cor de destaque
+                      <span className="color-field">
+                        <input
+                          type="color"
+                          value={item.accent}
+                          onChange={(event) =>
+                            updateCatalogGame(index, { accent: event.target.value })
+                          }
+                        />
+                        <input
+                          value={item.accent}
+                          onChange={(event) =>
+                            updateCatalogGame(index, { accent: event.target.value })
+                          }
+                        />
+                      </span>
+                    </label>
+                    <label>
+                      ID ou URL da capa
+                      <input
+                        value={item.coverUrl ?? ""}
+                        onChange={(event) =>
+                          updateCatalogGame(index, { coverUrl: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="full-row">
+                      Resumo
+                      <textarea
+                        value={item.summary}
+                        onChange={(event) =>
+                          updateCatalogGame(index, { summary: event.target.value })
+                        }
+                      />
+                    </label>
+                  </div>
+                  {(["windows", "linux"] as const).map((platformName) => {
+                    const draftBuild = item.builds[platformName] ?? {
+                      downloadUrl: "",
+                      executable: "",
+                    };
+                    return (
+                      <fieldset className="catalog-build" key={platformName}>
+                        <legend>{platformName === "windows" ? "Windows" : "Linux"}</legend>
+                        <label>
+                          ID ou URL do ZIP
+                          <input
+                            value={draftBuild.downloadUrl}
+                            onChange={(event) =>
+                              updateCatalogBuild(index, platformName, {
+                                downloadUrl: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Caminho do executável
+                          <input
+                            value={draftBuild.executable}
+                            onChange={(event) =>
+                              updateCatalogBuild(index, platformName, {
+                                executable: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                      </fieldset>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    className="remove-game-action"
+                    onClick={() =>
+                      setCatalogDraft((current) =>
+                        current.filter((_, itemIndex) => itemIndex !== index),
+                      )
+                    }
+                  >
+                    Remover jogo
+                  </button>
+                </fieldset>
+              ))}
+              <button type="button" className="add-game-action" onClick={addCatalogGame}>
+                Adicionar jogo
+              </button>
+            </div>
+            <label htmlFor="catalog-password">Senha de autorização</label>
+            <div className="password-field">
+              <input
+                id="catalog-password"
+                type={showCatalogPassword ? "text" : "password"}
+                value={catalogPassword}
+                onChange={(event) => setCatalogPassword(event.target.value)}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowCatalogPassword((current) => !current)}
+                aria-label={showCatalogPassword ? "Ocultar senha" : "Mostrar senha"}
+                aria-pressed={showCatalogPassword}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
+                  <circle cx="12" cy="12" r="2.7" />
+                  {showCatalogPassword && <path d="m4 4 16 16" />}
+                </svg>
+              </button>
+            </div>
+            {catalogError && <p className="dialog-error">{catalogError}</p>}
+            <div className="dialog-actions">
+              <button
+                type="button"
+                className="cancel-action"
+                disabled={catalogSaving}
+                onClick={closeCatalogEditor}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="confirm-action" disabled={catalogSaving}>
+                {catalogSaving ? "Salvando…" : "Salvar catálogo"}
               </button>
             </div>
           </form>

@@ -7,6 +7,8 @@ Launcher desktop para instalar, iniciar e organizar os jogos da Liga de Jogos UE
 - Tela cheia, sem bordas, pensada para apresentações.
 - Navegação por teclado e controle.
 - Catálogo remoto carregado do Google Drive, com cópia local para uso sem internet.
+- Referências de arquivos por ID do Google Drive ou por URL HTTPS completa.
+- Editor de catálogo local protegido pela senha administrativa, com backup automático.
 - Download, extração e instalação local dos jogos.
 - Capas baixadas e armazenadas localmente.
 - Apenas um jogo pode executar por vez.
@@ -85,7 +87,7 @@ O launcher inicia no modo normal, permitindo sair e desinstalar jogos sem senha.
 
 ## Catálogo de jogos
 
-O launcher lê primeiro o catálogo remoto configurado no Rust. Se a consulta falhar, usa o último catálogo válido salvo localmente; se não houver cache, usa `src/catalog.json`.
+Se houver um catálogo editado pelo launcher, ele tem prioridade. Caso contrário, o launcher lê o catálogo remoto configurado no Rust. Se a consulta falhar, usa o último catálogo remoto válido salvo localmente; se não houver cache, usa `src/catalog.json`.
 
 O arquivo remoto deve ser um JSON válido. Exemplo:
 
@@ -96,14 +98,14 @@ O arquivo remoto deve ser um JSON válido. Exemplo:
     "title": "Meu Jogo",
     "summary": "Descrição curta do jogo.",
     "accent": "#f6a43a",
-    "coverUrl": "https://drive.usercontent.google.com/download?id=ID_DA_CAPA&export=download&confirm=t",
+    "coverUrl": "ID_DA_CAPA",
     "builds": {
       "windows": {
-        "downloadUrl": "https://drive.usercontent.google.com/download?id=ID_DO_ZIP_WINDOWS&export=download&confirm=t",
+        "downloadUrl": "ID_DO_ZIP_WINDOWS",
         "executable": "MeuJogo/MeuJogo.exe"
       },
       "linux": {
-        "downloadUrl": "https://drive.usercontent.google.com/download?id=ID_DO_ZIP_LINUX&export=download&confirm=t",
+        "downloadUrl": "ID_DO_ZIP_LINUX",
         "executable": "MeuJogo/MeuJogo.x86_64"
       }
     }
@@ -111,12 +113,13 @@ O arquivo remoto deve ser um JSON válido. Exemplo:
 ]
 ```
 
-`cover_url` também é aceito por compatibilidade.
+`cover_url` também é aceito por compatibilidade. Tanto `coverUrl` quanto `downloadUrl` aceitam apenas o ID do arquivo no Google Drive. URLs HTTPS completas continuam aceitas, portanto catálogos existentes não precisam ser migrados.
 
 ### Regras importantes
 
 - O `id` só pode usar letras, números, `_` e `-`.
-- As URLs precisam usar HTTPS e os arquivos do Drive devem estar públicos para leitura por link.
+- IDs de arquivo podem conter letras, números, `_` e `-`. Quando uma URL completa for usada, ela precisa usar HTTPS.
+- Os arquivos do Drive devem estar públicos para leitura por link.
 - `executable` é o caminho relativo ao conteúdo do ZIP. Se o executável estiver na raiz, use apenas `MeuJogo.exe`; se estiver em uma pasta, inclua a pasta.
 - Atualize o conteúdo do mesmo arquivo de catálogo no Drive. Apagar e reenviar cria outro ID e exigiria atualizar o launcher.
 - O catálogo é público somente para leitura. Isso não autoriza outras pessoas a editá-lo.
@@ -129,6 +132,14 @@ O arquivo remoto deve ser um JSON válido. Exemplo:
 4. Acrescente o item ao `catalog.json` remoto.
 5. Confirme o caminho do executável dentro de cada ZIP.
 6. Reinicie o launcher para buscar o catálogo novo.
+
+## Editar o catálogo pelo launcher
+
+O botão **Editar catálogo** abre um formulário com os jogos, capas e builds Windows/Linux que estão em uso. Faça as alterações e informe a mesma senha administrativa configurada em `LAUNCHER_ADMIN_PASSWORD` para salvar; não é necessário editar o JSON manualmente.
+
+O editor valida os dados, IDs duplicados, campos obrigatórios e referências de download antes de alterar qualquer arquivo. A edição é salva somente nesse computador em `catalog.override.json` e passa a ter prioridade sobre o catálogo remoto. A senha do launcher não concede acesso de escrita ao arquivo hospedado no Google Drive.
+
+Antes de cada alteração, a versão anterior é copiada para `catalog-backups/`. Assim, um erro de conteúdo pode ser recuperado manualmente sem perder a última versão do catálogo.
 
 ## Dados locais
 
@@ -144,6 +155,8 @@ Estrutura principal:
 games/<id>/    # arquivos instalados do jogo
 covers/<id>/   # capa salva localmente
 catalog.json   # cache do catálogo remoto
+catalog.override.json # catálogo editado no launcher, quando existir
+catalog-backups/      # versões anteriores criadas antes de cada edição
 ```
 
 Desinstalar um jogo pelo launcher remove `games/<id>` e `covers/<id>`.
@@ -190,7 +203,6 @@ chmod +x Liga*.AppImage
 
 ## Próximas evoluções
 
-- Formulário administrativo para editar o catálogo sem manipular JSON.
 - Autenticação Google OAuth para escrita segura no catálogo.
 - Favoritos, avaliações e perfis de usuário.
 - Testes de foco de janela e retorno do jogo em Wayland/Linux.
