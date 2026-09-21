@@ -196,9 +196,11 @@ fn write_local_catalog(
     let backup_path = backup_catalog(app, &previous_contents)?;
     fs::write(catalog_override_path(app)?, format!("{formatted}\n"))
         .map_err(|error| error.to_string())?;
+    let catalog_path = catalog_override_path(app)?;
     Ok(SavedCatalogResponse {
         games,
         backup_path: backup_path.to_string_lossy().into_owned(),
+        catalog_path: catalog_path.to_string_lossy().into_owned(),
     })
 }
 
@@ -228,6 +230,54 @@ pub fn save_catalog(
         return Err("Senha administrativa incorreta.".into());
     }
     write_local_catalog(&app, &contents)
+}
+
+#[tauri::command]
+pub async fn sync_catalog_from_drive(
+    app: tauri::AppHandle,
+    password: String,
+    admin_password: State<'_, AdminPassword>,
+) -> Result<CatalogResponse, String> {
+    if admin_password.0.is_empty() {
+        return Err("Senha administrativa não configurada.".into());
+    }
+    if password != admin_password.0 {
+        return Err("Senha administrativa incorreta.".into());
+    }
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()
+            .map_err(|error| error.to_string())?;
+        let contents = client
+            .get(REMOTE_CATALOG_URL)
+            .send()
+            .and_then(|response| response.error_for_status())
+            .and_then(|response| response.text())
+            .map_err(|error| format!("Não foi possível baixar o catálogo do Drive: {error}"))?;
+        let games = parse_catalog(&contents)
+            .map_err(|error| format!("O catálogo recebido do Drive é inválido: {error}"))?;
+
+        let override_path = catalog_override_path(&app)?;
+        if override_path.exists() {
+            let local_contents = fs::read_to_string(&override_path)
+                .map_err(|error| format!("Não foi possível ler a edição local: {error}"))?;
+            backup_catalog(&app, &local_contents)?;
+        }
+        fs::write(catalog_cache_path(&app)?, contents).map_err(|error| error.to_string())?;
+        if override_path.exists() {
+            fs::remove_file(override_path).map_err(|error| error.to_string())?;
+        }
+
+        Ok(CatalogResponse {
+            games,
+            source: "remote".into(),
+            detail: None,
+        })
+    })
+    .await
+    .map_err(|error| format!("A sincronização do catálogo foi interrompida: {error}"))?
 }
 
 #[cfg(test)]

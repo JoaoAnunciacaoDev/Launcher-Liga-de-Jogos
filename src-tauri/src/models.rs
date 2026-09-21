@@ -47,4 +47,5 @@ pub struct CatalogResponse {
 pub struct SavedCatalogResponse {
     pub games: Vec<CatalogGame>,
     pub backup_path: String,
+    pub catalog_path: String,
 }

@@ -32,6 +32,7 @@ pub fn run() {
             catalog::load_catalog,
             catalog::get_catalog_json,
             catalog::save_catalog,
+            catalog::sync_catalog_from_drive,
             games::get_cached_cover,
             games::get_installation,
             games::install_game,

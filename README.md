@@ -137,7 +137,11 @@ O arquivo remoto deve ser um JSON válido. Exemplo:
 
 O botão **Editar catálogo** abre um formulário com os jogos, capas e builds Windows/Linux que estão em uso. Faça as alterações e informe a mesma senha administrativa configurada em `LAUNCHER_ADMIN_PASSWORD` para salvar; não é necessário editar o JSON manualmente.
 
-O editor valida os dados, IDs duplicados, campos obrigatórios e referências de download antes de alterar qualquer arquivo. A edição é salva somente nesse computador em `catalog.override.json` e passa a ter prioridade sobre o catálogo remoto. A senha do launcher não concede acesso de escrita ao arquivo hospedado no Google Drive.
+O editor exibe os jogos em uma grade: o primeiro item (`+`) adiciona um jogo, selecionar uma capa abre seus campos e os botões de ordenação alteram a posição no catálogo. Ele valida os dados, IDs duplicados, campos obrigatórios e referências de download antes de alterar qualquer arquivo.
+
+A edição é salva nesse computador em `catalog.override.json`, e o caminho completo do arquivo pronto para envio aparece no rodapé do launcher. Substitua o conteúdo do mesmo arquivo hospedado no Drive, preservando seu ID. A senha do launcher não concede acesso de escrita ao Google Drive; o envio ainda é manual.
+
+O botão **Sincronizar com o Drive** faz o caminho inverso: depois de exibir um aviso e validar a senha administrativa, baixa e valida o catálogo remoto, cria um backup da edição local e a substitui pela versão do Drive. Se o download ou a validação falhar, os dados locais são preservados.
 
 Antes de cada alteração, a versão anterior é copiada para `catalog-backups/`. Assim, um erro de conteúdo pode ser recuperado manualmente sem perder a última versão do catálogo.
 
