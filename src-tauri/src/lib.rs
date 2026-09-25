@@ -2,6 +2,7 @@ mod admin;
 mod catalog;
 mod games;
 mod launcher;
+mod local_games;
 mod models;
 mod state;
 
@@ -17,6 +18,7 @@ pub fn run() {
         .manage(EventModeState::default())
         .manage(AdminPassword(load_admin_password()))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let window = app
                 .get_webview_window("main")
@@ -38,6 +40,10 @@ pub fn run() {
             games::install_game,
             games::uninstall_game,
             launcher::launch_game,
+            local_games::load_local_games,
+            local_games::save_local_game,
+            local_games::remove_local_game,
+            local_games::get_local_cover,
             admin::event_mode_enabled,
             admin::toggle_event_mode,
             admin::exit_launcher

@@ -1,10 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import catalog from "./catalog.json";
-import type { CatalogResponse, Game, Platform } from "./catalogTypes";
+import type { CatalogResponse, Game, LauncherGame, LocalGame, Platform } from "./catalogTypes";
 import { AdminDialog } from "./components/AdminDialog";
 import { CatalogEditor } from "./components/CatalogEditor";
+import { LocalGameDialog } from "./components/LocalGameDialog";
 import "./App.css";
 
 type Installation = { installPath: string; executablePath: string };
@@ -13,7 +14,8 @@ const fallbackGames = catalog as Game[];
 
 function App() {
   const [selected, setSelected] = useState(0);
-  const [games, setGames] = useState<Game[]>(fallbackGames);
+  const [catalogGames, setCatalogGames] = useState<Game[]>(fallbackGames);
+  const [localGames, setLocalGames] = useState<LocalGame[]>([]);
   const [platform, setPlatform] = useState<Platform>("windows");
   const [installations, setInstallations] = useState<Record<string, Installation>>({});
   const [coverSources, setCoverSources] = useState<Record<string, string>>({});
@@ -23,20 +25,43 @@ function App() {
   const [gameRunning, setGameRunning] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [catalogDialogOpen, setCatalogDialogOpen] = useState(false);
+  const [localDialogOpen, setLocalDialogOpen] = useState(false);
+  const [editingLocalGame, setEditingLocalGame] = useState<LocalGame | undefined>();
   const [eventModeEnabled, setEventModeEnabled] = useState(false);
   const interactionLocked = useRef(false);
   const catalogRef = useRef<HTMLElement>(null);
   const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const game = games[selected] ?? fallbackGames[0];
-  const build = game.builds[platform];
-  const installation = installations[game.id];
+  const games = useMemo<LauncherGame[]>(
+    () => [
+      ...catalogGames.map((item) => ({ ...item, entryKind: "managed" as const })),
+      ...localGames.map((item) => ({ ...item, entryKind: "local" as const })),
+    ],
+    [catalogGames, localGames],
+  );
+  const game = useMemo<LauncherGame>(
+    () => games[selected] ?? { ...fallbackGames[0], entryKind: "managed" as const },
+    [games, selected],
+  );
+  const isLocalGame = game.entryKind === "local";
+  const managedGame = game.entryKind === "managed" ? game : undefined;
+  const build = managedGame?.builds[platform];
+  const installation = isLocalGame ? undefined : installations[game.id];
+  const launchTarget = useMemo(
+    () =>
+      game.entryKind === "local"
+        ? game.executableExists
+          ? { executablePath: game.executablePath, installPath: game.workingDirectory }
+          : undefined
+        : installation,
+    [game, installation],
+  );
 
   const installGame = useCallback(async () => {
     setBusy(true);
     setDownloadingGameId(game.id);
     setMessage(`Instalando ${game.title}…`);
     try {
-      if (!build) throw new Error(`Não há build para ${platform}.`);
+      if (!build || !managedGame) throw new Error(`Não há build para ${platform}.`);
       const result = await invoke<Installation>("install_game", {
         gameId: game.id,
         downloadUrl: build.downloadUrl,
@@ -44,11 +69,11 @@ function App() {
       });
       setInstallations((current) => ({ ...current, [game.id]: result }));
       let coverUnavailable = false;
-      if (game.coverUrl) {
+      if (managedGame.coverUrl) {
         try {
           const coverSource = await invoke<string>("get_cached_cover", {
             gameId: game.id,
-            coverUrl: game.coverUrl,
+            coverUrl: managedGame.coverUrl,
           });
           setCoverSources((current) => ({ ...current, [game.id]: coverSource }));
         } catch {
@@ -66,37 +91,61 @@ function App() {
       setBusy(false);
       setDownloadingGameId(null);
     }
-  }, [build, game.coverUrl, game.id, game.title, platform]);
+  }, [build, game.id, game.title, managedGame, platform]);
 
-  const launchInstalledGame = useCallback(async () => {
-    if (!installation || !build || gameRunning || interactionLocked.current) return;
+  const launchSelectedGame = useCallback(async () => {
+    if (!launchTarget || gameRunning || interactionLocked.current) return;
     interactionLocked.current = true;
     setBusy(true);
     setMessage(`Abrindo ${game.title}…`);
     try {
       await invoke("launch_game", {
-        executable: installation.executablePath,
-        workingDirectory: installation.installPath,
+        executable: launchTarget.executablePath,
+        workingDirectory: launchTarget.installPath,
       });
       setGameRunning(true);
       setMessage(`${game.title} está em execução.`);
     } catch (error) {
       interactionLocked.current = false;
-      setMessage(`Falha ao abrir: ${String(error)}`);
+      const reason = String(error);
+      if (game.entryKind === "local" && reason.includes("executável do jogo não foi encontrado")) {
+        setLocalGames((current) =>
+          current.map((item) =>
+            item.id === game.id ? { ...item, executableExists: false } : item,
+          ),
+        );
+      }
+      setMessage(`Falha ao abrir: ${reason}`);
     } finally {
       setBusy(false);
     }
-  }, [build, game.title, gameRunning, installation]);
+  }, [game.entryKind, game.id, game.title, gameRunning, launchTarget]);
 
   const activateSelectedGame = useCallback(() => {
     if (busy || gameRunning || interactionLocked.current) return;
+    if (isLocalGame) {
+      if (launchTarget) void launchSelectedGame();
+      else setMessage(`O executável de ${game.title} não foi encontrado. Edite o vínculo local.`);
+      return;
+    }
     if (!build) {
       setMessage(`Este jogo ainda não possui build para ${platform}.`);
       return;
     }
-    if (installation) void launchInstalledGame();
+    if (installation) void launchSelectedGame();
     else void installGame();
-  }, [build, busy, gameRunning, installGame, installation, launchInstalledGame, platform]);
+  }, [
+    build,
+    busy,
+    game.title,
+    gameRunning,
+    installGame,
+    installation,
+    isLocalGame,
+    launchSelectedGame,
+    launchTarget,
+    platform,
+  ]);
 
   useEffect(() => {
     void invoke<Platform>("current_platform").then(setPlatform);
@@ -106,7 +155,7 @@ function App() {
   useEffect(() => {
     void invoke<CatalogResponse>("load_catalog")
       .then(({ games: updatedCatalog, source, detail }) => {
-        if (updatedCatalog.length > 0) setGames(updatedCatalog);
+        if (updatedCatalog.length > 0) setCatalogGames(updatedCatalog);
         setSelected((current) => Math.min(current, Math.max(0, updatedCatalog.length - 1)));
         setMessage(
           source === "remote"
@@ -120,8 +169,14 @@ function App() {
   }, []);
 
   useEffect(() => {
+    void invoke<LocalGame[]>("load_local_games")
+      .then(setLocalGames)
+      .catch((error) => setMessage(`Não foi possível ler os jogos locais: ${String(error)}`));
+  }, []);
+
+  useEffect(() => {
     Promise.all(
-      games.map(
+      catalogGames.map(
         async (item) =>
           [
             item.id,
@@ -143,12 +198,12 @@ function App() {
         ),
       )
       .catch(() => setMessage("Não foi possível ler as instalações locais."));
-  }, [games, platform]);
+  }, [catalogGames, platform]);
 
   useEffect(() => {
     let cancelled = false;
     void Promise.all(
-      games
+      catalogGames
         .filter((item) => item.coverUrl)
         .map(async (item) => {
           try {
@@ -165,16 +220,43 @@ function App() {
         }),
     ).then((entries) => {
       if (!cancelled)
-        setCoverSources(
-          Object.fromEntries(
+        setCoverSources((current) => ({
+          ...current,
+          ...Object.fromEntries(
             entries.filter((entry): entry is readonly [string, string] => entry !== null),
           ),
-        );
+        }));
     });
     return () => {
       cancelled = true;
     };
-  }, [games]);
+  }, [catalogGames]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all(
+      localGames
+        .filter((item) => item.hasCover)
+        .map(async (item) => {
+          try {
+            return [item.id, await invoke<string>("get_local_cover", { id: item.id })] as const;
+          } catch {
+            return null;
+          }
+        }),
+    ).then((entries) => {
+      if (!cancelled)
+        setCoverSources((current) => ({
+          ...current,
+          ...Object.fromEntries(
+            entries.filter((entry): entry is readonly [string, string] => entry !== null),
+          ),
+        }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [localGames]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -194,7 +276,7 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (adminDialogOpen || catalogDialogOpen) return;
+      if (adminDialogOpen || catalogDialogOpen || localDialogOpen) return;
       if (event.target instanceof Element && event.target.closest("button, input, textarea"))
         return;
       if (["ArrowRight", "d", "D"].includes(event.key)) {
@@ -220,7 +302,7 @@ function App() {
         !interactionLocked.current
       ) {
         event.preventDefault();
-        void (installation ? launchInstalledGame() : installGame());
+        activateSelectedGame();
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -229,12 +311,10 @@ function App() {
     busy,
     adminDialogOpen,
     catalogDialogOpen,
+    localDialogOpen,
     gameRunning,
-    installation,
-    game,
     games,
-    installGame,
-    launchInstalledGame,
+    activateSelectedGame,
   ]);
 
   useEffect(() => {
@@ -255,7 +335,7 @@ function App() {
       const activeActions = new Set<string>();
       if (gamepad) {
         const pressed = (button: number) => gamepad.buttons[button]?.pressed;
-        if (!adminDialogOpen && !catalogDialogOpen) {
+        if (!adminDialogOpen && !catalogDialogOpen && !localDialogOpen) {
           if (pressed(14) || gamepad.axes[0] < -0.6) activeActions.add("left");
           if (pressed(15) || gamepad.axes[0] > 0.6) activeActions.add("right");
           if (pressed(12) || gamepad.axes[1] < -0.6) activeActions.add("up");
@@ -275,9 +355,8 @@ function App() {
     busy,
     adminDialogOpen,
     catalogDialogOpen,
+    localDialogOpen,
     gameRunning,
-    installation,
-    game,
     games,
     activateSelectedGame,
   ]);
@@ -351,15 +430,48 @@ function App() {
   const closeCatalogEditor = useCallback(() => setCatalogDialogOpen(false), []);
 
   const handleCatalogSaved = useCallback((updatedGames: Game[], catalogPath: string) => {
-    setGames(updatedGames);
+    setCatalogGames(updatedGames);
     setSelected(0);
     setMessage(`Catálogo salvo e pronto para enviar ao Drive: ${catalogPath}`);
   }, []);
 
   const handleCatalogSynced = useCallback((updatedGames: Game[]) => {
-    setGames(updatedGames);
+    setCatalogGames(updatedGames);
     setSelected(0);
     setMessage("Catálogo local substituído pela versão atual do Drive.");
+  }, []);
+
+  const openNewLocalGame = useCallback(() => {
+    setEditingLocalGame(undefined);
+    setLocalDialogOpen(true);
+  }, []);
+
+  const openSelectedLocalGame = useCallback(() => {
+    if (!isLocalGame) return;
+    setEditingLocalGame(game);
+    setLocalDialogOpen(true);
+  }, [game, isLocalGame]);
+
+  const handleLocalGameSaved = useCallback((saved: LocalGame) => {
+    setLocalGames((current) => {
+      const index = current.findIndex((item) => item.id === saved.id);
+      if (index < 0) return [...current, saved];
+      const updated = [...current];
+      updated[index] = saved;
+      return updated;
+    });
+    setMessage(`${saved.title} foi vinculado a este computador.`);
+  }, []);
+
+  const handleLocalGameRemoved = useCallback((id: string) => {
+    setLocalGames((current) => current.filter((item) => item.id !== id));
+    setCoverSources((current) => {
+      const updated = { ...current };
+      delete updated[id];
+      return updated;
+    });
+    setSelected(0);
+    setMessage("O vínculo local foi removido. Os arquivos do jogo foram preservados.");
   }, []);
 
   return (
@@ -370,7 +482,16 @@ function App() {
           <h1>UEFS</h1>
         </div>
         <div className="topbar-actions">
-          <p className="status">{Object.keys(installations).length} instalados</p>
+          <p className="status">
+            {Object.keys(installations).length} instalados · {localGames.length} locais
+          </p>
+          <button
+            className="admin-action"
+            disabled={busy || gameRunning || eventModeEnabled || platform === "unsupported"}
+            onClick={openNewLocalGame}
+          >
+            Adicionar jogo local
+          </button>
           <button
             className="admin-action"
             disabled={busy || gameRunning}
@@ -419,38 +540,56 @@ function App() {
             </span>
             <span className="game-title">{item.title}</span>
             <span className="game-state">
-              {item.builds[platform]
-                ? installations[item.id]
-                  ? "Pronto para jogar"
-                  : "Não instalado"
-                : "Indisponível nesta plataforma"}
+              {item.entryKind === "local"
+                ? item.executableExists
+                  ? "Local · Pronto para jogar"
+                  : "Local · Arquivo não encontrado"
+                : item.builds[platform]
+                  ? installations[item.id]
+                    ? "Pronto para jogar"
+                    : "Não instalado"
+                  : "Indisponível nesta plataforma"}
             </span>
           </button>
         ))}
       </section>
       <section className="game-details" aria-live="polite">
         <div>
-          <p className="eyebrow">SELECIONADO · {platform.toUpperCase()}</p>
+          <p className="eyebrow">
+            SELECIONADO · {platform.toUpperCase()}
+            {isLocalGame ? " · LOCAL" : ""}
+          </p>
           <h2>{game.title}</h2>
           <p>{game.summary}</p>
         </div>
         <div className="game-actions">
           <button
             className="primary-action"
-            disabled={busy || gameRunning || !build}
+            disabled={busy || gameRunning || (isLocalGame ? !launchTarget : !build)}
             onClick={activateSelectedGame}
           >
             {busy
               ? "Aguarde…"
               : gameRunning
                 ? "Em execução"
-                : !build
-                  ? "Indisponível"
-                  : installation
-                    ? "Jogar"
-                    : "Instalar"}
+                : isLocalGame && !launchTarget
+                  ? "Arquivo não encontrado"
+                  : !isLocalGame && !build
+                    ? "Indisponível"
+                    : isLocalGame || installation
+                      ? "Jogar"
+                      : "Instalar"}
           </button>
-          {installation && !eventModeEnabled && (
+          {isLocalGame && !eventModeEnabled && (
+            <button
+              className="secondary-action"
+              disabled={busy || gameRunning}
+              onClick={openSelectedLocalGame}
+            >
+              {launchTarget ? "Editar vínculo" : "Localizar novamente"}
+            </button>
+          )}
+          {!isLocalGame && installation && !eventModeEnabled && (
             <button
               className="secondary-action"
               disabled={busy || gameRunning}
@@ -480,6 +619,15 @@ function App() {
           onFailure={setMessage}
           onSaved={handleCatalogSaved}
           onSynced={handleCatalogSynced}
+        />
+      )}
+      {localDialogOpen && platform !== "unsupported" && (
+        <LocalGameDialog
+          game={editingLocalGame}
+          platform={platform}
+          onClose={() => setLocalDialogOpen(false)}
+          onRemoved={handleLocalGameRemoved}
+          onSaved={handleLocalGameSaved}
         />
       )}
     </main>

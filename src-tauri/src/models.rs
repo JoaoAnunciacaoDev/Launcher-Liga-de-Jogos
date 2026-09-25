@@ -49,3 +49,25 @@ pub struct SavedCatalogResponse {
     pub backup_path: String,
     pub catalog_path: String,
 }
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalGameRecord {
+    pub id: String,
+    pub title: String,
+    pub summary: String,
+    pub accent: String,
+    pub platform: String,
+    pub executable_path: String,
+    pub working_directory: String,
+    #[serde(default)]
+    pub has_cover: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalGame {
+    #[serde(flatten)]
+    pub record: LocalGameRecord,
+    pub executable_exists: bool,
+}

@@ -2,6 +2,19 @@ use crate::state::{AdminPassword, EventModeState, ExitState};
 use std::sync::atomic::Ordering;
 use tauri::State;
 
+pub(crate) fn verify_admin_password(
+    password: &str,
+    admin_password: &AdminPassword,
+) -> Result<(), String> {
+    if admin_password.0.is_empty() {
+        return Err("Senha administrativa não configurada.".into());
+    }
+    if password != admin_password.0 {
+        return Err("Senha administrativa incorreta.".into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn event_mode_enabled(event_mode: State<EventModeState>) -> bool {
     event_mode.enabled.load(Ordering::SeqCst)
@@ -13,12 +26,7 @@ pub fn toggle_event_mode(
     admin_password: State<AdminPassword>,
     event_mode: State<EventModeState>,
 ) -> Result<bool, String> {
-    if admin_password.0.is_empty() {
-        return Err("Senha administrativa não configurada.".into());
-    }
-    if password != admin_password.0 {
-        return Err("Senha administrativa incorreta.".into());
-    }
+    verify_admin_password(&password, &admin_password)?;
     let enabled = !event_mode.enabled.load(Ordering::SeqCst);
     event_mode.enabled.store(enabled, Ordering::SeqCst);
     Ok(enabled)

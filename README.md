@@ -9,6 +9,7 @@ Launcher desktop para instalar, iniciar e organizar os jogos da Liga de Jogos UE
 - Catálogo remoto carregado do Google Drive, com cópia local para uso sem internet.
 - Referências de arquivos por ID do Google Drive ou por URL HTTPS completa.
 - Editor de catálogo local protegido pela senha administrativa, com backup automático.
+- Jogos locais vinculados a executáveis já existentes no computador.
 - Download, extração e instalação local dos jogos.
 - Capas baixadas e armazenadas localmente.
 - Apenas um jogo pode executar por vez.
@@ -161,9 +162,26 @@ covers/<id>/   # capa salva localmente
 catalog.json   # cache do catálogo remoto
 catalog.override.json # catálogo editado no launcher, quando existir
 catalog-backups/      # versões anteriores criadas antes de cada edição
+local-games.json      # vínculos com jogos existentes neste computador
+local-covers/         # cópias das capas escolhidas para jogos locais
 ```
 
 Desinstalar um jogo pelo launcher remove `games/<id>` e `covers/<id>`.
+
+## Jogos locais
+
+O botão **Adicionar jogo local** cria um vínculo com um jogo que já está no computador, sem
+baixá-lo nem copiá-lo. No Windows, o arquivo deve terminar em `.exe`. No Linux, deve terminar em
+`.x86_64` e possuir permissão de execução. A pasta do executável é usada automaticamente como
+diretório de trabalho.
+
+Os vínculos ficam somente naquele computador, em `local-games.json`, e nunca são incluídos no
+catálogo enviado ao Drive. Uma capa local opcional é copiada para `local-covers/`, para que continue
+disponível mesmo se a imagem original for movida.
+
+Adicionar, editar, localizar novamente ou remover um vínculo exige a senha administrativa e fica
+bloqueado durante o modo evento. **Remover do launcher** apaga apenas o cadastro e a cópia interna
+da capa; o executável e os demais arquivos externos são sempre preservados.
 
 ## Gerar pacote Windows
 

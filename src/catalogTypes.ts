@@ -30,3 +30,17 @@ export type SavedCatalogResponse = {
 export type EditableGame = Omit<Game, "builds"> & {
   builds: Partial<Record<CatalogPlatform, GameBuild>>;
 };
+
+export type LocalGame = {
+  id: string;
+  title: string;
+  summary: string;
+  accent: string;
+  platform: CatalogPlatform;
+  executablePath: string;
+  workingDirectory: string;
+  hasCover: boolean;
+  executableExists: boolean;
+};
+
+export type LauncherGame = (Game & { entryKind: "managed" }) | (LocalGame & { entryKind: "local" });

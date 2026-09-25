@@ -1,0 +1,86 @@
+.local-game-dialog {
+  width: min(92vw, 760px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.local-game-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.local-game-grid label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.local-game-grid .full-row {
+  grid-column: 1 / -1;
+}
+
+.local-game-grid input,
+.local-game-grid textarea {
+  width: 100%;
+  border: 1px solid #5a566b;
+  border-radius: 0.5rem;
+  padding: 0.65rem;
+  color: #fff;
+  background: #161520;
+  font: inherit;
+}
+
+.local-game-grid textarea {
+  min-height: 4rem;
+  resize: vertical;
+}
+
+.local-color-field,
+.path-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.local-color-field {
+  grid-template-columns: 3rem 1fr;
+}
+
+.local-color-field input[type="color"] {
+  height: 2.65rem;
+  padding: 0.2rem;
+}
+
+.path-field {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.path-field button,
+.remove-local-action {
+  border: 1px solid #706a82;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  color: #f8f7ff;
+  cursor: pointer;
+  background: #272535;
+}
+
+.remove-local-action {
+  margin-right: auto;
+  color: #ffb8b8;
+}
+
+.path-field button:disabled,
+.remove-local-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 620px) {
+  .local-game-grid {
+    grid-template-columns: 1fr;
+  }
+}
